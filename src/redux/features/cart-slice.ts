@@ -1,62 +1,84 @@
-import { IProduct } from "../../types/index";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { toast } from "react-toastify";
+import { IProduct } from "../../types/index";
 
 export interface ICartProduct extends IProduct {
   amount: number;
 }
 
 export interface CartState {
-  value: ICartProduct[];
+  cart: ICartProduct[];
+  wishlist: IProduct[];
 }
 
 const cartStore = localStorage.getItem("cart");
+const wishlistStore = localStorage.getItem("wishlist");
+
 const initialState: CartState = {
-  value: cartStore ? JSON.parse(cartStore) : [],
+  cart: cartStore ? JSON.parse(cartStore) : [],
+  wishlist: wishlistStore ? JSON.parse(wishlistStore) : [],
 };
 
 export const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    addCart(state, action: PayloadAction<IProduct>) {
-      let index = state.value.findIndex(
-        (item) => item.id === action.payload.id
-      );
+    toggleCart(state, action: PayloadAction<IProduct>) {
+      let index = state.cart.findIndex((item) => item.id === action.payload.id);
       if (index < 0) {
-        state.value.push({ ...action.payload, amount: 1 });
-        localStorage.setItem("cart", JSON.stringify(state.value));
+        state.cart.push({ ...action.payload, amount: 1 });
+        toast("Added to cart successfully");
+      } else {
+        state.cart.splice(index, 1);
+        toast("Removed from cart");
       }
-    },
-    deleteCart(state, action: PayloadAction<number>) {
-      state.value = state.value.filter((item) => item.id !== action.payload);
-      localStorage.setItem("cart", JSON.stringify(state.value));
+      localStorage.setItem("cart", JSON.stringify(state.cart));
     },
     incrementAmountCart(state, action: PayloadAction<number>) {
-      state.value = state.value.map((item) =>
+      state.cart = state.cart.map((item) =>
         item.id === action.payload ? { ...item, amount: item.amount + 1 } : item
       );
-      localStorage.setItem("cart", JSON.stringify(state.value));
+      localStorage.setItem("cart", JSON.stringify(state.cart));
     },
     decrementAmountCart(state, action: PayloadAction<number>) {
-      state.value = state.value.map((item) =>
+      state.cart = state.cart.map((item) =>
         item.id === action.payload && item.amount > 1
           ? { ...item, amount: item.amount - 1 }
           : item
       );
-      localStorage.setItem("cart", JSON.stringify(state.value));
+      localStorage.setItem("cart", JSON.stringify(state.cart));
     },
-    clearCart(state) {
-      state.value = [];
-      localStorage.removeItem("cart");
+   clearCart(state, action) {
+  state.cart = state.cart.filter((item) => item.id !== action.payload); 
+  localStorage.setItem("cart", JSON.stringify(state.cart));
+  toast("Product removed from cart");
+},
+
+    addToWishlist(state, action: PayloadAction<IProduct>) {
+      let index = state.wishlist.findIndex((item) => item.id === action.payload.id);
+      if (index === -1) {
+        state.wishlist.push(action.payload);
+        toast("Added to wishlist");
+      } else {
+        toast("Already in wishlist");
+      }
+      localStorage.setItem("wishlist", JSON.stringify(state.wishlist));
+    },
+    deleteWishlistItem(state, action: PayloadAction<number>) {
+      state.wishlist = state.wishlist.filter((item) => item.id !== action.payload);
+      localStorage.setItem("wishlist", JSON.stringify(state.wishlist));
+      toast("Item removed from wishlist");
     },
   },
 });
 
 export const {
-  addCart,
+  toggleCart,
   incrementAmountCart,
-  clearCart,
   decrementAmountCart,
-  deleteCart,
+  clearCart,
+  addToWishlist,
+  deleteWishlistItem,
 } = cartSlice.actions;
+
 export default cartSlice.reducer;
